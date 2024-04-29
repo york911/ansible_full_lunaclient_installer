@@ -52,3 +52,20 @@
     command: gpasswd -a {{ non_root_user }} hsmusers
     become: true
     when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+  - name: "Move Chrystoki.conf file"
+    command: mv /etc/Chrystoki.conf "{{ install_directory }}/safenet/lunaclient"
+    become: true
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+  - name: "Export ChrystokiConfigurationPath"
+    lineinfile:
+      dest: "/home/{{ non_root_user }}/.bashrc"
+      line: "export ChrystokiConfigurationPath={{ install_directory }}/safenet/lunaclient"
+      insertafter: EOF
+      state: present
+    notify: Reload user shell
+
+  handlers:
+    - name: Reload user shell
+      command: "su - {{ non_root_user }} -c 'source ~/.bashrc'"

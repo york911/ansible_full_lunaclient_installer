@@ -48,12 +48,7 @@
       msg: "Install script was successful."
     when: install_output.rc == 0  # Check the return code for success
 
-  - name: Print the output if the install script failed
-    debug:
-      msg: "Install script failed with error: {{ install_output.stderr }}"
-    when: install_output.rc != 0  # Check the return code for failure
-  
   - name: Add non-root user into hsmusers group
-    command: 
-      cmd: gpasswd -a {{ non_root_user }} hsmusers
-    when: install_output.rc != 0  # Check the return code for failure
+    command: gpasswd -a {{ non_root_user }} hsmusers
+    become: true
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'

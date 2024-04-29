@@ -1,0 +1,59 @@
+---
+
+- hosts: all
+  become: true
+  vars:
+      tar_lunaclient_file: /tmp/610-000397-010_SW_Linux_Luna_Client_V10.7.1_RevA.tar
+      untar_lunaclient_directory: /tmp
+      lunaclient_installer_folder: /tmp/LunaClient_10.7.1-125_Linux/64
+      install_directory: "/opt/lunaclient_10.7.1"
+      lunaclient_components: "network backup ped" 
+      lunaclient_apis: "sdk jsp jcprov"
+      non_root_user: "ec2-user"
+  tasks:
+
+  - name: Install required packages for Full Luna CLient library
+    yum:
+      name:  
+        - libnsl
+        - "kernel-devel-{{ ansible_kernel }}"
+        - gcc
+        - gcc-c++
+        - make
+        - elfutils-libelf-devel
+        - chkconfig 
+        - python3-pip
+      state: latest
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+      
+  - name: Untar Luna Client installer file
+    unarchive:
+      src: "{{ tar_lunaclient_file }}"
+      dest: "{{ untar_lunaclient_directory }}"
+      remote_src: yes
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+  - name: Install Luna Client 
+    expect:
+      chdir: "{{ lunaclient_installer_folder }}"
+      command: "sh install.sh -p {{ lunaclient_components }} -c {{ lunaclient_apis }} -install_directory {{ install_directory }}"
+      responses:
+        "(y/n)": "y"   # Respond with "y" to prompt
+      timeout: 300  # Extend timeout to 300 seconds (adjust as needed)
+    register: install_output
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+  - name: Check the output of the install.sh script
+    debug:
+      msg: "Install script was successful."
+    when: install_output.rc == 0  # Check the return code for success
+
+  - name: Print the output if the install script failed
+    debug:
+      msg: "Install script failed with error: {{ install_output.stderr }}"
+    when: install_output.rc != 0  # Check the return code for failure
+  
+  - name: Add non-root user into hsmusers group
+    command: 
+      cmd: gpasswd -a {{ non_root_user }} hsmusers
+    when: install_output.rc != 0  # Check the return code for failure

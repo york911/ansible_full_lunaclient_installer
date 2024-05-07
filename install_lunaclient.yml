@@ -79,4 +79,5 @@
 
   handlers:
     - name: Reload user shell
-      command: "su - {{ non_root_user }} -c 'source ~/.bashrc'"
+      become: true
+      command: "sudo su - {{ non_root_user }} -c 'source ~/.bashrc'"
